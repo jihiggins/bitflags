@@ -269,6 +269,7 @@
 //!
 //! Users should generally avoid defining a flag with a value of zero.
 
+#![feature(const_trait_impl)]
 #![cfg_attr(not(test), no_std)]
 #![doc(html_root_url = "https://docs.rs/bitflags/1.3.2")]
 
@@ -701,7 +702,7 @@ macro_rules! __impl_public_bitflags {
 
         }
 
-        impl $crate::__private::core::ops::BitOr for $PublicBitFlags {
+        impl const $crate::__private::core::ops::BitOr for $PublicBitFlags {
             type Output = Self;
 
             /// Returns the union of the two sets of flags.
@@ -719,7 +720,7 @@ macro_rules! __impl_public_bitflags {
             }
         }
 
-        impl $crate::__private::core::ops::BitXor for $PublicBitFlags {
+        impl const $crate::__private::core::ops::BitXor for $PublicBitFlags {
             type Output = Self;
 
             /// Returns the left flags, but with all the right flags toggled.
@@ -737,7 +738,7 @@ macro_rules! __impl_public_bitflags {
             }
         }
 
-        impl $crate::__private::core::ops::BitAnd for $PublicBitFlags {
+        impl const $crate::__private::core::ops::BitAnd for $PublicBitFlags {
             type Output = Self;
 
             /// Returns the intersection between the two sets of flags.
@@ -755,7 +756,7 @@ macro_rules! __impl_public_bitflags {
             }
         }
 
-        impl $crate::__private::core::ops::Sub for $PublicBitFlags {
+        impl const $crate::__private::core::ops::Sub for $PublicBitFlags {
             type Output = Self;
 
             /// Returns the set difference of the two sets of flags.
@@ -773,7 +774,7 @@ macro_rules! __impl_public_bitflags {
             }
         }
 
-        impl $crate::__private::core::ops::Not for $PublicBitFlags {
+        impl const $crate::__private::core::ops::Not for $PublicBitFlags {
             type Output = Self;
 
             /// Returns the complement of this set of flags.
@@ -1181,19 +1182,33 @@ macro_rules! __impl_internal_bitflags_serde {
         }
     ) => {
         impl $crate::__private::serde::Serialize for $InternalBitFlags {
-            fn serialize<S: $crate::__private::serde::Serializer>(&self, serializer: S) -> $crate::__private::core::result::Result<S::Ok, S::Error> {
-                $crate::serde_support::serialize_bits_default($crate::__private::core::stringify!($InternalBitFlags), &self.bits, serializer)
+            fn serialize<S: $crate::__private::serde::Serializer>(
+                &self,
+                serializer: S,
+            ) -> $crate::__private::core::result::Result<S::Ok, S::Error> {
+                $crate::serde_support::serialize_bits_default(
+                    $crate::__private::core::stringify!($InternalBitFlags),
+                    &self.bits,
+                    serializer,
+                )
             }
         }
 
         impl<'de> $crate::__private::serde::Deserialize<'de> for $InternalBitFlags {
-            fn deserialize<D: $crate::__private::serde::Deserializer<'de>>(deserializer: D) -> $crate::__private::core::result::Result<Self, D::Error> {
-                let bits = $crate::serde_support::deserialize_bits_default($crate::__private::core::stringify!($InternalBitFlags), deserializer)?;
+            fn deserialize<D: $crate::__private::serde::Deserializer<'de>>(
+                deserializer: D,
+            ) -> $crate::__private::core::result::Result<Self, D::Error> {
+                let bits = $crate::serde_support::deserialize_bits_default(
+                    $crate::__private::core::stringify!($InternalBitFlags),
+                    deserializer,
+                )?;
 
-                $crate::__private::core::result::Result::Ok($InternalBitFlags::from_bits_retain(bits))
+                $crate::__private::core::result::Result::Ok($InternalBitFlags::from_bits_retain(
+                    bits,
+                ))
             }
         }
-    }
+    };
 }
 
 #[macro_export(local_inner_macros)]
@@ -1207,7 +1222,7 @@ macro_rules! __impl_internal_bitflags_serde {
                 $Flag:ident;
             )*
         }
-    ) => { }
+    ) => {};
 }
 
 #[cfg(feature = "example_generated")]
@@ -1319,18 +1334,9 @@ mod tests {
         assert_eq!(Flags::from_bits_retain(0b1), Flags::A);
         assert_eq!(Flags::from_bits_retain(0b10), Flags::B);
 
-        assert_eq!(
-            Flags::from_bits_retain(0b11),
-            (Flags::A | Flags::B)
-        );
-        assert_eq!(
-            Flags::from_bits_retain(0b1000),
-            (extra | Flags::empty())
-        );
-        assert_eq!(
-            Flags::from_bits_retain(0b1001),
-            (extra | Flags::A)
-        );
+        assert_eq!(Flags::from_bits_retain(0b11), (Flags::A | Flags::B));
+        assert_eq!(Flags::from_bits_retain(0b1000), (extra | Flags::empty()));
+        assert_eq!(Flags::from_bits_retain(0b1001), (extra | Flags::A));
 
         let extra = EmptyFlags::from_bits_retain(0b1000);
         assert_eq!(
@@ -1564,8 +1570,7 @@ mod tests {
                 const I = 0b100000000;
             }
         }
-        let iter_test_flags =
-            || (0..=0b111_1111_1111).map(|bits| Test::from_bits_retain(bits));
+        let iter_test_flags = || (0..=0b111_1111_1111).map(|bits| Test::from_bits_retain(bits));
 
         for a in iter_test_flags() {
             assert_eq!(
@@ -1981,10 +1986,7 @@ mod tests {
         assert_eq!(Flags::A.bits(), 0x0000_0000_0000_0000_0000_0000_0000_0001);
         assert_eq!(Flags::B.bits(), 0x0000_0000_0000_1000_0000_0000_0000_0000);
         assert_eq!(Flags::C.bits(), 0x8000_0000_0000_0000_0000_0000_0000_0000);
-        assert_eq!(
-            Flags::ABC.bits(),
-            0x8000_0000_0000_1000_0000_0000_0000_0001
-        );
+        assert_eq!(Flags::ABC.bits(), 0x8000_0000_0000_1000_0000_0000_0000_0001);
         assert_eq!(format!("{:?}", Flags::A), "Flags(A)");
         assert_eq!(format!("{:?}", Flags::B), "Flags(B)");
         assert_eq!(format!("{:?}", Flags::C), "Flags(C)");

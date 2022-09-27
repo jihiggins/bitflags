@@ -1,3 +1,4 @@
+#![feature(const_trait_impl)]
 #![no_std]
 
 use bitflags::bitflags;
